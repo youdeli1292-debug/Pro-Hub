@@ -544,7 +544,7 @@ end)
 -- ============================================================
 local Fluent = getgenv and getgenv().Fluent
 if not Fluent then
-	Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+	Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/refs/heads/master/Example.lua"))()
 	if getgenv then getgenv().Fluent = Fluent end
 end
 if not Fluent then error("[Arsenal Hub] Fluent UI не загрузился") end
