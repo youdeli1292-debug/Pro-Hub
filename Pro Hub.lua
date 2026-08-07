@@ -21,9 +21,9 @@
 -- ============================================================
 local CONFIG = {
 	Urls = {
-		Arsenal = "https://YOUR_NEW_HOST/Arsenal.lua", -- ← заменить
-		Rivals  = "https://YOUR_NEW_HOST/Rivals.lua",  -- ← заменить
-		MM2     = "https://YOUR_NEW_HOST/MM2.lua",     -- ← заменить
+		Arsenal = "https://raw.githubusercontent.com/youdeli1292-debug/Pro-Hub/refs/heads/main/Arsenal.lua", -- ← заменить
+		Rivals  = "https://raw.githubusercontent.com/youdeli1292-debug/Pro-Hub/refs/heads/main/Rivals.lua",  -- ← заменить
+		MM2     = "https://raw.githubusercontent.com/youdeli1292-debug/Pro-Hub/refs/heads/main/MM2.lua",     -- ← заменить
 	},
 	PlaceIds = {
 		Arsenal = 286090429,
