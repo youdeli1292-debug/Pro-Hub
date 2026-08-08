@@ -1,9 +1,8 @@
 --[[
 	MM2 HUB v3.0.0 — Murder Mystery 2 (PlaceId 142823291)
-	UI: Fluent (dawid-scripts) вместо Rayfield
+	UI: Nolin-UI v2.0
 	Функции: Role Revealer ESP, авто-фарм монет,
 	авто-подбор пистолета, авто-удар ножом, передвижение.
-	Требования: Drawing API, Fluent UI, стандартные функции экзекутора.
 ]]
 
 -- ============================================================
@@ -30,13 +29,8 @@ local UserInputService = game:GetService("UserInputService")
 local LocalPlayer      = Players.LocalPlayer
 local Camera           = workspace.CurrentCamera
 
-local EXPLOIT = { Drawing = Drawing ~= nil }
-if not EXPLOIT.Drawing then
-	warn("[MM2 Hub] Drawing API недоступен — ESP будет отключён.")
-end
-
 -- ============================================================
--- 3. СОСТОЯНИЕ, КОННЕКТЫ (и вперёд-объявления)
+-- 3. СОСТОЯНИЕ И КОННЕКТЫ
 -- ============================================================
 local State = { Loaded = true }
 local Connections = {}
@@ -53,8 +47,6 @@ local function BindLoop(func)
 	return con
 end
 
--- ВПЕРЁД-ОБЪЯВЛЕНИЯ: Notify и Unload заполняются позже (после Fluent),
--- но ссылаться на них должны функции, определённые раньше.
 local Notify
 local Unload
 
@@ -114,19 +106,21 @@ local function GetPlayerRole(plr)
 	return ROLE.INNOCENT
 end
 
-local function IsMurderer(plr) return GetPlayerRole(plr) == ROLE.MURDERER end
+local function IsMurderer(plr)
+	return GetPlayerRole(plr) == ROLE.MURDERER
+end
 
 -- ============================================================
--- 6. ESP (устойчивая версия — без Drawing.Fonts, всё в pcall)
+-- 6. ESP
 -- ============================================================
 local ESP = {
-	Enabled = false,
-	Boxes   = true,
-	Tracers = true,
-	Names   = true,
-	Roles   = true,
-	Chams   = true,
-	Data    = {},
+	Enabled   = false,
+	Boxes     = true,
+	Tracers   = true,
+	Names     = true,
+	Roles     = true,
+	Chams     = true,
+	Data      = {},
 }
 
 local function MakeDrawing(kind)
@@ -363,18 +357,13 @@ BindLoop(function()
 end)
 
 -- ============================================================
--- 8. АВТО-ПОДБОР ПИСТОЛЕТА ШЕРИФА
+-- 8. АВТО-ПОДБОР ПИСТОЛЕТА
 -- ============================================================
 local GunPickup = { Enabled = false, Interval = 1.0 }
 
 local function GetDroppedGun()
 	for _, tool in ipairs(workspace:GetChildren()) do
 		if tool:IsA("Tool") and tool.Name:lower():find("gun") then return tool end
-	end
-	for _, desc in ipairs(workspace:GetDescendants()) do
-		if desc:IsA("Tool") and desc.Name:lower():find("gun") and desc.Parent and desc.Parent:IsA("BasePart") then
-			return desc
-		end
 	end
 	return nil
 end
@@ -391,7 +380,7 @@ local function TryPickupGun()
 		task.wait(0.25)
 	end
 	if gun.Parent == LocalPlayer.Character or gun.Parent == LocalPlayer.Backpack then
-		Notify("Пистолет шерифа подобран!")
+		Notify("Пистолет подобран!", "Info")
 	end
 end
 
@@ -498,55 +487,78 @@ Connect(UserInputService.JumpRequest, function()
 end)
 
 -- ============================================================
--- 11. UI — FLUENT
+-- 11. NOLIN-UI
 -- ============================================================
-local Fluent = getgenv and getgenv().Fluent
-if not Fluent then
-	Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/refs/heads/master/Example.lua"))()
-	if getgenv then getgenv().Fluent = Fluent end
+
+-- Проверяем, есть ли Nolin-UI от Pro Hub
+local IsStandalone = false
+local NolinUI = _G.NolinUI
+local Window = _G.NolinWindow
+
+if not NolinUI or not Window then
+	-- Автономный режим — загружаем Nolin-UI сами
+	IsStandalone = true
+	NolinUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/youdeli1292-debug/Pro-Hub/refs/heads/main/Nolin-UI.lua"))()
+	if not NolinUI then error("[MM2 Hub] Nolin-UI не загрузился") end
+
+	Window = NolinUI:CreateWindow({
+		Name = "MM2 Hub v" .. CONFIG.Version,
+		LoadingText = "Загрузка MM2 Hub...",
+		LoadingDuration = 2.0,
+		KeybindToToggle = Enum.KeyCode.RightShift,
+		SizeX = 600,
+		SizeY = 440,
+		IncludeSettings = false,
+	})
+
+	_G.NolinUI = NolinUI
+	_G.NolinWindow = Window
 end
-if not Fluent then error("[MM2 Hub] Fluent UI не загрузился") end
 
-local Window = Fluent:CreateWindow({
-	Title    = "MM2 Hub v" .. CONFIG.Version,
-	SubTitle = "Murder Mystery 2 • PlaceId " .. CONFIG.PlaceId,
-	TabWidth = 160,
-	Size     = UDim2.fromOffset(560, 480),
-	Acrylic  = true,
-	Theme    = "Dark",
-	MinimizeKey = Enum.KeyCode.LeftControl,
-})
-
-Notify = function(text)
-	pcall(function() Fluent:Notify({ Title = "MM2 Hub", Content = text, Duration = 4 }) end)
+Notify = function(text, ty)
+	pcall(function()
+		Window:Notify({ Title = "MM2 Hub", Content = text, Duration = 4, Type = ty or "Info" })
+	end)
 	print("[MM2 Hub] " .. text)
 end
 
+if IsStandalone then
+	Window:Notify({ Title = "MM2 Hub v" .. CONFIG.Version, Content = "Модуль загружен!", Duration = 5, Type = "Success" })
+end
+
+-- === ВКЛАДКИ ===
 local Tabs = {
-	Main = Window:AddTab({ Title = "Главная",   Icon = "home" }),
-	Esp  = Window:AddTab({ Title = "ESP / Роли", Icon = "eye" }),
-	Farm = Window:AddTab({ Title = "Фарм",      Icon = "coins" }),
-	Atk  = Window:AddTab({ Title = "Атака",     Icon = "swords" }),
-	Move = Window:AddTab({ Title = "Передвижение", Icon = "bolt" }),
+	Main = Window:CreateTab({ Name = "MM2 Hub" }),
+	Esp  = Window:CreateTab({ Name = "ESP / Роли" }),
+	Farm = Window:CreateTab({ Name = "Фарм" }),
+	Atk  = Window:CreateTab({ Name = "Атака" }),
+	Move = Window:CreateTab({ Name = "Передвижение" }),
 }
 
--- Главная
-Tabs.Main:AddParagraph({
+-- === ГЛАВНАЯ ===
+Tabs.Main:CreateSection({ Name = "Информация" })
+Tabs.Main:CreateParagraph({
 	Title = "MM2 Hub v" .. CONFIG.Version,
 	Content = "Модуль для Murder Mystery 2 (PlaceId " .. CONFIG.PlaceId .. ")\n" ..
 		"• ESP ролей: Убийца (красный), Шериф (синий), Мирный (зелёный)\n" ..
 		"• Авто-фарм монет • авто-подбор пистолета • авто-удар ножом\n" ..
-		"• UI: Fluent",
+		"• UI: Nolin-UI v2.0",
 })
 
-Tabs.Main:AddButton({
-	Title = "Выгрузить скрипт (Unload)",
-	Callback = function() Unload() end,
+Tabs.Main:CreateSection({ Name = "Управление" })
+Tabs.Main:CreateButton({
+	Name = "Выгрузить MM2 Hub",
+	Description = "Полностью выгрузить модуль",
+	Callback = function()
+		if Unload then Unload() end
+	end,
 })
 
--- ESP
-Tabs.Esp:AddToggle("MM2_ESP_Master", {
-	Title = "ESP (общий выключатель)",
+-- === ESP ===
+Tabs.Esp:CreateSection({ Name = "ESP" })
+
+Tabs.Esp:CreateToggle({
+	Name = "ESP (общий выключатель)",
 	Default = false,
 	Callback = function(Value)
 		ESP.Enabled = Value
@@ -560,32 +572,32 @@ Tabs.Esp:AddToggle("MM2_ESP_Master", {
 	end,
 })
 
-Tabs.Esp:AddToggle("MM2_ESP_Roles", {
-	Title = "Роли над головами",
+Tabs.Esp:CreateToggle({
+	Name = "Роли над головами",
 	Default = true,
 	Callback = function(Value) ESP.Roles = Value end,
 })
 
-Tabs.Esp:AddToggle("MM2_ESP_Boxes", {
-	Title = "Box ESP (рамки цветом роли)",
+Tabs.Esp:CreateToggle({
+	Name = "Box ESP (рамки цветом роли)",
 	Default = true,
 	Callback = function(Value) ESP.Boxes = Value end,
 })
 
-Tabs.Esp:AddToggle("MM2_ESP_Tracers", {
-	Title = "Tracer ESP (линии)",
+Tabs.Esp:CreateToggle({
+	Name = "Tracer ESP (линии)",
 	Default = true,
 	Callback = function(Value) ESP.Tracers = Value end,
 })
 
-Tabs.Esp:AddToggle("MM2_ESP_Names", {
-	Title = "Имена игроков",
+Tabs.Esp:CreateToggle({
+	Name = "Имена игроков",
 	Default = true,
 	Callback = function(Value) ESP.Names = Value end,
 })
 
-Tabs.Esp:AddToggle("MM2_ESP_Chams", {
-	Title = "Wallhack (Chams цветом роли)",
+Tabs.Esp:CreateToggle({
+	Name = "Wallhack (Chams цветом роли)",
 	Default = true,
 	Callback = function(Value)
 		ESP.Chams = Value
@@ -599,103 +611,96 @@ Tabs.Esp:AddToggle("MM2_ESP_Chams", {
 	end,
 })
 
--- Фарм
-Tabs.Farm:AddToggle("MM2_Farm_Coins", {
-	Title = "Авто-фарм монет",
+-- === ФАРМ ===
+Tabs.Farm:CreateSection({ Name = "Монеты" })
+
+Tabs.Farm:CreateToggle({
+	Name = "Авто-фарм монет",
 	Default = false,
 	Callback = function(Value)
 		CoinFarm.Enabled = Value
-		Notify(Value and "Фарм монет ВКЛ" or "Фарм монет ВЫКЛ")
+		Notify(Value and "Фарм монет ВКЛ" or "Фарм монет ВЫКЛ", Value and "Success" or "Warning")
 	end,
 })
 
-Tabs.Farm:AddToggle("MM2_Farm_OnlyInnocent", {
-	Title = "Только когда я Мирный",
+Tabs.Farm:CreateToggle({
+	Name = "Только когда я Мирный",
 	Default = true,
 	Callback = function(Value) CoinFarm.OnlyInnocent = Value end,
 })
 
-Tabs.Farm:AddSlider("MM2_Farm_Range", {
-	Title = "Дистанция подбора",
-	Default = 12,
-	Min = 5,
-	Max = 25,
-	Rounding = 0,
+Tabs.Farm:CreateSlider({
+	Name = "Дистанция подбора",
+	Description = "Радиус поиска монет",
+	Min = 5, Max = 25, Default = 12, Increment = 1, Suffix = "m",
 	Callback = function(Value) CoinFarm.PickupRange = Value end,
 })
 
-Tabs.Farm:AddSlider("MM2_Farm_Gap", {
-	Title = "Задержка телепорта (мс)",
-	Default = 35,
-	Min = 10,
-	Max = 100,
-	Rounding = 0,
+Tabs.Farm:CreateSlider({
+	Name = "Задержка телепорта",
+	Description = "Пауза между телепортами к монетам",
+	Min = 10, Max = 100, Default = 35, Increment = 5, Suffix = "ms",
 	Callback = function(Value) CoinFarm.TeleportGap = Value / 100 end,
 })
 
-Tabs.Farm:AddSection("Оружие")
+Tabs.Farm:CreateSection({ Name = "Оружие" })
 
-Tabs.Farm:AddToggle("MM2_Farm_GunPickup", {
-	Title = "Авто-подбор пистолета шерифа",
+Tabs.Farm:CreateToggle({
+	Name = "Авто-подбор пистолета шерифа",
 	Default = false,
 	Callback = function(Value) GunPickup.Enabled = Value end,
 })
 
--- Атака
-Tabs.Atk:AddToggle("MM2_Atk_Knife", {
-	Title = "Авто-удар ножом (если я Убийца)",
+-- === АТАКА ===
+Tabs.Atk:CreateSection({ Name = "Нож" })
+
+Tabs.Atk:CreateToggle({
+	Name = "Авто-удар ножом (если я Убийца)",
 	Default = false,
 	Callback = function(Value) AutoKnife.Enabled = Value end,
 })
 
-Tabs.Atk:AddToggle("MM2_Atk_Teleport", {
-	Title = "Телепорт к цели (иначе бег)",
+Tabs.Atk:CreateToggle({
+	Name = "Телепорт к цели (иначе бег)",
 	Default = true,
 	Callback = function(Value) AutoKnife.Teleport = Value end,
 })
 
-Tabs.Atk:AddSlider("MM2_Atk_Range", {
-	Title = "Дистанция удара",
-	Default = 10,
-	Min = 4,
-	Max = 20,
-	Rounding = 0,
+Tabs.Atk:CreateSlider({
+	Name = "Дистанция удара",
+	Min = 4, Max = 20, Default = 10, Increment = 1, Suffix = "m",
 	Callback = function(Value) AutoKnife.Range = Value end,
 })
 
--- Передвижение
-Tabs.Move:AddToggle("MM2_Move_WS", {
-	Title = "WalkSpeed (скорость)",
+-- === ПЕРЕДВИЖЕНИЕ ===
+Tabs.Move:CreateSection({ Name = "Скорость" })
+
+Tabs.Move:CreateToggle({
+	Name = "WalkSpeed (скорость)",
 	Default = false,
 	Callback = function(Value) Movement.WalkSpeedEnabled = Value end,
 })
 
-Tabs.Move:AddSlider("MM2_Move_WSVal", {
-	Title = "Скорость",
-	Default = 16,
-	Min = 16,
-	Max = 150,
-	Rounding = 0,
+Tabs.Move:CreateSlider({
+	Name = "Скорость",
+	Min = 16, Max = 150, Default = 16, Increment = 1, Suffix = "",
 	Callback = function(Value) Movement.WalkSpeed = Value end,
 })
 
-Tabs.Move:AddToggle("MM2_Move_JP", {
-	Title = "JumpPower (прыжок)",
+Tabs.Move:CreateToggle({
+	Name = "JumpPower (прыжок)",
 	Default = false,
 	Callback = function(Value) Movement.JumpPowerEnabled = Value end,
 })
 
-Tabs.Move:AddSlider("MM2_Move_JPVal", {
-	Title = "Высота прыжка",
-	Default = 50,
-	Min = 50,
-	Max = 300,
-	Rounding = 0,
+Tabs.Move:CreateSlider({
+	Name = "Высота прыжка",
+	Min = 50, Max = 300, Default = 50, Increment = 5, Suffix = "",
 	Callback = function(Value) Movement.JumpPower = Value end,
 })
 
-Tabs.Move:AddToggle("MM2_Move_InfJump", {
-	Title = "Бесконечный прыжок",
+Tabs.Move:CreateToggle({
+	Name = "Бесконечный прыжок",
 	Default = false,
 	Callback = function(Value) Movement.InfiniteJump = Value end,
 })
@@ -704,41 +709,26 @@ Tabs.Move:AddToggle("MM2_Move_InfJump", {
 -- 12. ВЫГРУЗКА
 -- ============================================================
 Unload = function()
-	Notify("Выгрузка...")
+	Notify("Выгрузка...", "Warning")
 
-	-- 1. все соединения
 	for _, con in ipairs(Connections) do
 		pcall(function() con:Disconnect() end)
 	end
 	table.clear(Connections)
 
-	-- 2. все Drawing и Highlight
-	if EXPLOIT.Drawing then
-		for plr, d in pairs(ESP.Data) do
-			for _, drawing in pairs(d) do
-				if type(drawing) == "userdata" then
-					pcall(function() drawing:Remove() end)
-				end
-			end
-			if d.Highlight then pcall(function() d.Highlight:Destroy() end) end
-		end
-		table.clear(ESP.Data)
-	end
-
-	-- 3. восстановить персонажа
 	local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
 	if hum then
 		hum.WalkSpeed = 16
 		hum.JumpPower = 50
 	end
 
-	-- 4. UI
-	pcall(function() Window:Destroy() end)
+	if IsStandalone then
+		pcall(function() Window:Destroy() end)
+	end
 
 	State.Loaded = false
 end
 
--- экспорт для хаба
 pcall(function()
-	getgenv().MM2Hub = { Unload = Unload, State = State }
+	if getgenv then getgenv().MM2Hub = { Unload = Unload, State = State } end
 end)
