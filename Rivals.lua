@@ -432,7 +432,14 @@ local Tabs = {
 	Movement = Window:CreateTab({ Name = "Movement" }),
 	Main     = Window:CreateTab({ Name = "Главная" }),
 }
-
+local Window = NolinUI:CreateWindow({
+    Name = "Nolin-UI v2.1 | interface settings",
+    DiscordInvite = "https://discord.gg/gHx8RAb9c8",
+    KeybindToToggle = Enum.KeyCode.RightShift,
+    SizeX = 580,
+    SizeY = 420,
+    IncludeSettings = true, -- Добавляет автоматическую вкладку настроек
+})
 -- Combat
 Tabs.Combat:CreateSection({ Name = "Aimbot" })
 
