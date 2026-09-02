@@ -525,7 +525,14 @@ end
 if IsStandalone then
 	Window:Notify({ Title = "MM2 Hub v" .. CONFIG.Version, Content = "Модуль загружен!", Duration = 5, Type = "Success" })
 end
-
+local Window = NolinUI:CreateWindow({
+    Name = "Nolin-UI v2.1 | interface settings",
+    DiscordInvite = "https://discord.gg/gHx8RAb9c8",
+    KeybindToToggle = Enum.KeyCode.RightShift,
+    SizeX = 580,
+    SizeY = 420,
+    IncludeSettings = true, -- Добавляет автоматическую вкладку настроек
+})
 -- === ВКЛАДКИ ===
 local Tabs = {
 	Main = Window:CreateTab({ Name = "MM2 Hub" }),
