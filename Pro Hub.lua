@@ -53,7 +53,7 @@ end
 _G.NolinConns = {}
 
 -- Загружаем библиотеку Nolin-UI
-local NolinUI = loadstring(game:HttpGet(CONFIG.Urls.NolinUI))()
+local NolinUI = loadstring(game:HttpGet(https://raw.githubusercontent.com/youdeli1292-debug/Nolin-UI/refs/heads/main/NolinUI.lua))()
 if not NolinUI then
 	error("[PulseHub] Ошибка: Nolin-UI не загрузился!")
 end
