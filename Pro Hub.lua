@@ -130,36 +130,49 @@ local function LoadModule(url, gameName)
 	Notify("PulseHub", "Загрузка скрипта " .. gameName .. "...", 2, "Info")
 
 	task.spawn(function()
-		-- 1. Скачивание скрипта
+		-- 1. Скачиваем скрипт ДО удаления интерфейса (чтобы убедиться, что он доступен)
 		local fetchOk, scriptSource = pcall(function()
 			return game:HttpGet(url)
 		end)
 
 		if not fetchOk or not scriptSource or scriptSource == "" then
-			Notify("Ошибка", "Не удалось скачать " .. gameName .. " (ошибка сети или 404)", 6, "Error")
+			Notify("Ошибка", "Не удалось скачать " .. gameName .. " (404/ошибка сети)", 6, "Error")
 			Loading = false
 			return
 		end
 
-		-- 2. Компиляция через loadstring
 		local parseOk, executableFunc = pcall(loadstring, scriptSource)
-		
 		if not parseOk or type(executableFunc) ~= "function" then
-			Notify("Ошибка", "Ошибка парсинга " .. gameName .. ":\n" .. tostring(executableFunc), 6, "Error")
+			Notify("Ошибка", "Ошибка в коде " .. gameName .. ":\n" .. tostring(executableFunc), 6, "Error")
 			Loading = false
 			return
 		end
 
-		-- 3. Закрытие текущего окна хаба перед запуском нового
-		if Window and Window.Destroy then
-			pcall(function() 
-				Window:Destroy() 
-			end)
+		-- 2. ПОЛНАЯ ОЧИСТКА ХАБА
+		-- Отключаем все бинды и коннекты самого хаба
+		if _G.NolinConns then
+			for _, conn in pairs(_G.NolinConns) do
+				pcall(function() conn:Disconnect() end)
+			end
+			_G.NolinConns = nil
 		end
-		
-		task.wait(0.2)
 
-		-- 4. Запуск скрипта игры
+		-- Уничтожаем само окно
+		if Window and Window.Destroy then
+			pcall(function() Window:Destroy() end)
+		end
+
+		-- СБРАСЫВАЕМ глобальные переменные, чтобы MM2 создал всё с чистого листа
+		_G.NolinUILoaded = nil
+		_G.NolinUI = nil
+		_G.NolinWindow = nil
+		_G.PulseUI = nil
+		_G.PulseWindow = nil
+
+		-- Даем движку Roblox время (0.5 сек) на отключение KeyCode-событий в UserInputService
+		task.wait(0.5)
+
+		-- 3. Запускаем MM2
 		local runOk, runErr = pcall(executableFunc)
 		if not runOk then
 			warn("[PulseHub Error]: Ошибка при исполнении модуля: " .. tostring(runErr))
