@@ -81,7 +81,14 @@ local function Notify(title, content, duration, ty)
 		Window:Notify({ Title = title, Content = content, Duration = duration or 4, Type = ty or "Info" })
 	end)
 end
-
+local Window = NolinUI:CreateWindow({
+    Name = "Nolin-UI v2.1 | interface settings",
+    DiscordInvite = "https://discord.gg/gHx8RAb9c8",
+    KeybindToToggle = Enum.KeyCode.RightShift,
+    SizeX = 580,
+    SizeY = 420,
+    IncludeSettings = true, -- Добавляет автоматическую вкладку настроек
+})
 -- ============================================================
 -- 4. ОПРЕДЕЛЕНИЕ ИГРЫ И УМНАЯ ЗАГРУЗКА МОДУЛЕЙ
 -- ============================================================
