@@ -498,7 +498,7 @@ local Window = _G.NolinWindow
 if not NolinUI or not Window then
 	-- Автономный режим — загружаем Nolin-UI сами
 	IsStandalone = true
-	NolinUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/youdeli1292-debug/Pro-Hub/refs/heads/main/Nolin-UI.lua"))()
+	NolinUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/youdeli1292-debug/Nolin-UI/refs/heads/main/NolinUI.lua"))()
 	if not NolinUI then error("[MM2 Hub] Nolin-UI не загрузился") end
 
 	Window = NolinUI:CreateWindow({
