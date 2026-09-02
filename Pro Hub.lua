@@ -17,7 +17,7 @@
 local CONFIG = {
 	-- ВНИМАНИЕ: Если вы переименуете репозиторий на GitHub, измените "Pro-Hub" в ссылках ниже на новое название!
 	Urls = {
-		NolinUI = "https://raw.githubusercontent.com/youdeli1292-debug/Pro-Hub/refs/heads/main/Nolin-UI.lua",
+		NolinUI = "https://raw.githubusercontent.com/youdeli1292-debug/Nolin-UI/refs/heads/main/NolinUI.lua",
 		Arsenal = "https://raw.githubusercontent.com/youdeli1292-debug/Pro-Hub/refs/heads/main/Arsenal.lua",
 		Rivals  = "https://raw.githubusercontent.com/youdeli1292-debug/Pro-Hub/refs/heads/main/Rivals.lua",
 		MM2     = "https://raw.githubusercontent.com/youdeli1292-debug/Pro-Hub/refs/heads/main/MM2.lua",
