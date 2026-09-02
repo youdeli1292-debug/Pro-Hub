@@ -1,26 +1,24 @@
 -- [[
-	██████╗ ██╗   ██╗██╗     ███████╗███████╗██╗  ██╗██╗   ██╗██████╗ 
-	██╔══██╗██║   ██║██║     ██╔════╝██╔════╝██║  ██║██║   ██║██╔══██╗
-	██████╔╝██║   ██║██║     ███████╗█████╗  ███████║██║   ██║██████╔╝
-	██╔═══╝ ██║   ██║██║     ╚════██║██╔══╝  ██╔══██║██║   ██║██╔═══╝ 
-	██║     ╚██████╔╝███████╗███████║███████╗██║  ██║╚██████╔╝██║     
-	╚═╝      ╚═════╝ ╚══════╝╚══════╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝     
-
-	PulseHub v3.0.0 — универсальный хаб RIVALS / Arsenal / MM2
-	UI: Nolin-UI v2.0 (собственная библиотека)
-	Модули: Arsenal.lua / Rivals.lua / MM2.lua
-]]
+-- 	██████╗ ██╗   ██╗██╗     ███████╗███████╗██╗  ██╗██╗   ██╗██████╗ 
+-- 	██╔══██╗██║   ██║██║     ██╔════╝██╔════╝██║  ██║██║   ██║██╔══██╗
+-- 	██████╔╝██║   ██║██║     ███████╗█████╗  ███████║██║   ██║██████╔╝
+-- 	██╔═══╝ ██║   ██║██║     ╚════██║██╔══╝  ██╔══██║██║   ██║██╔═══╝ 
+-- 	██║     ╚██████╔╝███████╗███████║███████╗██║  ██║╚██████╔╝██║     
+-- 	╚═╝      ╚═════╝ ╚══════╝╚══════╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝     
+-- 
+-- 	PulseHub v3.0.0 — универсальный хаб RIVALS / Arsenal / MM2
+-- 	UI: Nolin-UI v2.0
+-- ]]
 
 -- ============================================================
 -- 1. КОНФИГУРАЦИЯ
 -- ============================================================
 local CONFIG = {
-	-- ВНИМАНИЕ: Если вы переименуете репозиторий на GitHub, измените "Pro-Hub" в ссылках ниже на новое название!
 	Urls = {
-		NolinUI = "https://raw.githubusercontent.com/youdeli1292-debug/Nolin-UI/refs/heads/main/NolinUI.lua",
-		Arsenal = "https://raw.githubusercontent.com/youdeli1292-debug/Pro-Hub/refs/heads/main/Arsenal.lua",
-		Rivals  = "https://raw.githubusercontent.com/youdeli1292-debug/Pro-Hub/refs/heads/main/Rivals.lua",
-		MM2     = "https://raw.githubusercontent.com/youdeli1292-debug/Pro-Hub/refs/heads/main/MM2.lua",
+		NolinUI = "https://raw.githubusercontent.com/youdeli1292-debug/Nolin-UI/main/NolinUI.lua",
+		Arsenal = "https://raw.githubusercontent.com/youdeli1292-debug/Pro-Hub/main/Arsenal.lua",
+		Rivals  = "https://raw.githubusercontent.com/youdeli1292-debug/Pro-Hub/main/Rivals.lua",
+		MM2     = "https://raw.githubusercontent.com/youdeli1292-debug/Pro-Hub/main/MM2.lua",
 	},
 	PlaceIds = {
 		Arsenal = 286090429,
@@ -40,36 +38,57 @@ local TeleportService = game:GetService("TeleportService")
 local LocalPlayer = Players.LocalPlayer
 
 -- ============================================================
--- 3. NOLIN-UI ЗАГРУЗКА
+-- 3. БЕЗОПАСНАЯ ЗАГРУЗКА NOLIN-UI
 -- ============================================================
 
--- Очищаем старый UI если он был запущен ранее
+-- Очищаем предыдущие соединения и интерфейс, если они есть
 if _G.NolinUILoaded then
 	pcall(function() _G.NolinUILoaded:Destroy() end)
 end
 if _G.NolinConns then
-	for _, c in pairs(_G.NolinConns) do pcall(function() c:Disconnect() end) end
+	for _, c in pairs(_G.NolinConns) do 
+		pcall(function() c:Disconnect() end) 
+	end
 end
 _G.NolinConns = {}
 
--- Загружаем библиотеку Nolin-UI
-local NolinUI = loadstring(game:HttpGet(https://raw.githubusercontent.com/youdeli1292-debug/Nolin-UI/refs/heads/main/NolinUI.lua))()
-if not NolinUI then
-	error("[PulseHub] Ошибка: Nolin-UI не загрузился!")
+-- Скачивание и инициализация библиотеки UI
+local uiFetchSuccess, uiSource = pcall(function()
+	return game:HttpGet(CONFIG.Urls.NolinUI)
+end)
+
+if not uiFetchSuccess or not uiSource or uiSource == "" then
+	warn("[PulseHub] Ошибка: Не удалось скачать Nolin-UI. Проверьте доступность URL.")
+	return
 end
 
--- Создаём главное окно хаба
-local Window = NolinUI:CreateWindow({
-	Name = "PulseHub v" .. CONFIG.Version,
-	LoadingText = "Загрузка PulseHub...",
-	LoadingDuration = 2.0,
-	KeybindToToggle = Enum.KeyCode.RightShift,
-	SizeX = 600,
-	SizeY = 440,
-	IncludeSettings = false, -- Используем собственную вкладку настроек ниже
-})
+local uiLoadSuccess, NolinUIModule = pcall(loadstring(uiSource))
+if not uiLoadSuccess or not NolinUIModule then
+	warn("[PulseHub] Ошибка: Nolin-UI не смог скомпилироваться или запуститься: " .. tostring(NolinUIModule))
+	return
+end
 
--- Экспортируем глобальные переменные для совместимости с модулями
+local NolinUI = NolinUIModule
+
+-- Создаём главное окно хаба
+local Window
+local winSuccess, winErr = pcall(function()
+	return NolinUI:CreateWindow({
+		Name = "PulseHub v" .. CONFIG.Version,
+		LoadingText = "Загрузка PulseHub...",
+		LoadingDuration = 1.5,
+		KeybindToToggle = Enum.KeyCode.RightShift,
+		SizeX = 600,
+		SizeY = 440,
+		IncludeSettings = false,
+	})
+end)
+
+if not winSuccess or not Window then
+	Window = winErr -- В случае если CreateWindow возвращает объект напрямую
+end
+
+-- Глобальные переменные
 _G.NolinUI = NolinUI
 _G.NolinWindow = Window
 _G.PulseUI = NolinUI
@@ -78,19 +97,14 @@ _G.PulseWindow = Window
 -- Вспомогательная функция уведомлений
 local function Notify(title, content, duration, ty)
 	pcall(function()
-		Window:Notify({ Title = title, Content = content, Duration = duration or 4, Type = ty or "Info" })
+		if Window and Window.Notify then
+			Window:Notify({ Title = title, Content = content, Duration = duration or 4, Type = ty or "Info" })
+		end
 	end)
 end
-local Window = NolinUI:CreateWindow({
-    Name = "Nolin-UI v2.1 | interface settings",
-    DiscordInvite = "https://discord.gg/gHx8RAb9c8",
-    KeybindToToggle = Enum.KeyCode.RightShift,
-    SizeX = 580,
-    SizeY = 420,
-    IncludeSettings = true, -- Добавляет автоматическую вкладку настроек
-})
+
 -- ============================================================
--- 4. ОПРЕДЕЛЕНИЕ ИГРЫ И УМНАЯ ЗАГРУЗКА МОДУЛЕЙ
+-- 4. ОПРЕДЕЛЕНИЕ ИГРЫ И ЗАГРУЗКА МОДУЛЕЙ
 -- ============================================================
 local function DetectGame()
 	local id = game.PlaceId
@@ -116,30 +130,41 @@ local function LoadModule(url, gameName)
 	Notify("PulseHub", "Загрузка скрипта " .. gameName .. "...", 2, "Info")
 
 	task.spawn(function()
-		-- Загружаем исходный код скрипта из интернета
-		local ok, result = pcall(function()
-			return loadstring(game:HttpGet(url))
+		-- 1. Скачивание скрипта
+		local fetchOk, scriptSource = pcall(function()
+			return game:HttpGet(url)
 		end)
-		
-		if ok and type(result) == "function" then
-			-- [ВАЖНО]: Полностью закрываем и уничтожаем окно PulseHub перед запуском скрипта игры!
-			if Window then
-				pcall(function() 
-					Window:Destroy() 
-				end)
-			end
-			
-			-- Небольшая задержка, чтобы UI хаба успел красиво исчезнуть и очиститься из памяти
-			task.wait(0.3)
-			
-			-- Запускаем скрипт игры (он создаст своё новое чистое окно)
-			local runOk, runErr = pcall(result)
-			if not runOk then
-				warn("[PulseHub Error]: Ошибка при запуске модуля: " .. tostring(runErr))
-			end
-		else
-			Notify("Ошибка", "Не удалось скачать " .. gameName .. ":\n" .. tostring(result), 8, "Error")
+
+		if not fetchOk or not scriptSource or scriptSource == "" then
+			Notify("Ошибка", "Не удалось скачать " .. gameName .. " (ошибка сети или 404)", 6, "Error")
+			Loading = false
+			return
 		end
+
+		-- 2. Компиляция через loadstring
+		local parseOk, executableFunc = pcall(loadstring, scriptSource)
+		
+		if not parseOk or type(executableFunc) ~= "function" then
+			Notify("Ошибка", "Ошибка парсинга " .. gameName .. ":\n" .. tostring(executableFunc), 6, "Error")
+			Loading = false
+			return
+		end
+
+		-- 3. Закрытие текущего окна хаба перед запуском нового
+		if Window and Window.Destroy then
+			pcall(function() 
+				Window:Destroy() 
+			end)
+		end
+		
+		task.wait(0.2)
+
+		-- 4. Запуск скрипта игры
+		local runOk, runErr = pcall(executableFunc)
+		if not runOk then
+			warn("[PulseHub Error]: Ошибка при исполнении модуля: " .. tostring(runErr))
+		end
+		
 		Loading = false
 	end)
 end
@@ -161,9 +186,9 @@ Tabs.Main:CreateSection({ Name = "Информация" })
 Tabs.Main:CreateParagraph({
 	Title = "PulseHub v" .. CONFIG.Version,
 	Content = "Поддерживаемые игры:\n" ..
-		"• Arsenal (PlaceId 286090429)\n" ..
-		"• RIVALS (PlaceId 17625359962)\n" ..
-		"• Murder Mystery 2 (PlaceId 142823291)\n\n" ..
+		"• Arsenal (PlaceId " .. CONFIG.PlaceIds.Arsenal .. ")\n" ..
+		"• RIVALS (PlaceId " .. CONFIG.PlaceIds.Rivals .. ")\n" ..
+		"• Murder Mystery 2 (PlaceId " .. CONFIG.PlaceIds.MM2 .. ")\n\n" ..
 		"Текущая игра: " .. DetectGame() .. "\n" ..
 		"RightShift — скрыть/показать интерфейс",
 })
@@ -209,8 +234,12 @@ Tabs.Main:CreateButton({
 	Name = "Выгрузить хаб (Unload)",
 	Description = "Полностью закрыть PulseHub",
 	Callback = function()
-		Notify("PulseHub", "Закрытие через 1.5 сек...", 1.5, "Warning")
-		task.delay(1.5, function() Window:Destroy() end)
+		Notify("PulseHub", "Закрытие через 1 сек...", 1, "Warning")
+		task.delay(1, function() 
+			if Window and Window.Destroy then
+				Window:Destroy() 
+			end
+		end)
 	end,
 })
 
@@ -234,7 +263,7 @@ Tabs.Settings:CreateDropdown({
 Tabs.Settings:CreateSection({ Name = "О хабе" })
 Tabs.Settings:CreateParagraph({
 	Title = "PulseHub",
-	Content = "Универсальный хаб нового поколения.\nИспользует кастомную библиотеку Nolin-UI v2.0.",
+	Content = "Универсальный хаб.\nИспользует библиотеку Nolin-UI.",
 })
 
 -- ============================================================
