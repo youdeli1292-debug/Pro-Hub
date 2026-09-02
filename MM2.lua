@@ -487,33 +487,27 @@ Connect(UserInputService.JumpRequest, function()
 end)
 
 -- ============================================================
--- 11. NOLIN-UI
+-- 11. NOLIN-UI (ИСПРАВЛЕННЫЙ ОДНОКРАТНЫЙ ВЫЗОВ)
 -- ============================================================
-
--- Проверяем, есть ли Nolin-UI от Pro Hub
-local IsStandalone = false
 local NolinUI = _G.NolinUI
-local Window = _G.NolinWindow
-
-if not NolinUI or not Window then
-	-- Автономный режим — загружаем Nolin-UI сами
-	IsStandalone = true
-	NolinUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/youdeli1292-debug/Nolin-UI/refs/heads/main/NolinUI.lua"))()
+if not NolinUI then
+	NolinUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/youdeli1292-debug/Nolin-UI/main/NolinUI.lua"))()
 	if not NolinUI then error("[MM2 Hub] Nolin-UI не загрузился") end
-
-	Window = NolinUI:CreateWindow({
-		Name = "MM2 Hub v" .. CONFIG.Version,
-		LoadingText = "Загрузка MM2 Hub...",
-		LoadingDuration = 2.0,
-		KeybindToToggle = Enum.KeyCode.RightShift,
-		SizeX = 600,
-		SizeY = 440,
-		IncludeSettings = false,
-	})
-
 	_G.NolinUI = NolinUI
-	_G.NolinWindow = Window
 end
+
+-- Создаем ТОЛЬКО ОДНО окно
+local Window = NolinUI:CreateWindow({
+	Name = "MM2 Hub v" .. CONFIG.Version,
+	LoadingText = "Загрузка MM2 Hub...",
+	LoadingDuration = 1.5,
+	KeybindToToggle = Enum.KeyCode.RightShift,
+	SizeX = 600,
+	SizeY = 440,
+	IncludeSettings = true,
+})
+
+_G.NolinWindow = Window
 
 Notify = function(text, ty)
 	pcall(function()
@@ -522,17 +516,6 @@ Notify = function(text, ty)
 	print("[MM2 Hub] " .. text)
 end
 
-if IsStandalone then
-	Window:Notify({ Title = "MM2 Hub v" .. CONFIG.Version, Content = "Модуль загружен!", Duration = 5, Type = "Success" })
-end
-local Window = NolinUI:CreateWindow({
-    Name = "Nolin-UI v2.1 | interface settings",
-    DiscordInvite = "https://discord.gg/gHx8RAb9c8",
-    KeybindToToggle = Enum.KeyCode.RightShift,
-    SizeX = 580,
-    SizeY = 420,
-    IncludeSettings = true, -- Добавляет автоматическую вкладку настроек
-})
 -- === ВКЛАДКИ ===
 local Tabs = {
 	Main = Window:CreateTab({ Name = "MM2 Hub" }),
@@ -729,9 +712,7 @@ Unload = function()
 		hum.JumpPower = 50
 	end
 
-	if IsStandalone then
-		pcall(function() Window:Destroy() end)
-	end
+	pcall(function() Window:Destroy() end)
 
 	State.Loaded = false
 end
