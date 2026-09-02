@@ -403,7 +403,7 @@ local Window = _G.NolinWindow
 
 if not NolinUI or not Window then
 	IsStandalone = true
-	NolinUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/youdeli1292-debug/Pro-Hub/refs/heads/main/Nolin-UI.lua"))()
+	NolinUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/youdeli1292-debug/Nolin-UI/refs/heads/main/NolinUI.lua"))()
 	if not NolinUI then error("[RIVALS Hub] Nolin-UI не загрузился") end
 	Window = NolinUI:CreateWindow({
 		Name = "RIVALS Hub v" .. CONFIG.Version,
