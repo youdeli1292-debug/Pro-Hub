@@ -386,35 +386,31 @@ BindLoop(function()
 end)
 
 -- ============================================================
--- 8. NOLIN-UI
+-- 8. NOLIN-UI (ОДНО ОКНО — ИСПРАВЛЕНО)
 -- ============================================================
-local IsStandalone = false
 local NolinUI = _G.NolinUI
-local Window = _G.NolinWindow
-
-if not NolinUI or not Window then
-	IsStandalone = true
-	NolinUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/youdeli1292-debug/Nolin-UI/refs/heads/main/NolinUI.lua"))()
+if not NolinUI then
+	NolinUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/youdeli1292-debug/Nolin-UI/main/NolinUI.lua"))()
 	if not NolinUI then error("[Arsenal Hub] Nolin-UI не загрузился") end
-	Window = NolinUI:CreateWindow({
-		Name = "Arsenal Hub v" .. CONFIG.Version,
-		LoadingText = "Загрузка Arsenal Hub...",
-		LoadingDuration = 2.0,
-		KeybindToToggle = Enum.KeyCode.RightShift,
-		SizeX = 600, SizeY = 440,
-		IncludeSettings = false,
-	})
 	_G.NolinUI = NolinUI
-	_G.NolinWindow = Window
 end
+
+-- Создаём ТОЛЬКО ОДНО окно
+local Window = NolinUI:CreateWindow({
+	Name = "Arsenal Hub v" .. CONFIG.Version,
+	LoadingText = "Загрузка Arsenal Hub...",
+	LoadingDuration = 1.5,
+	KeybindToToggle = Enum.KeyCode.RightShift,
+	SizeX = 600,
+	SizeY = 440,
+	IncludeSettings = true,
+})
+
+_G.NolinWindow = Window
 
 Notify = function(text, ty)
 	pcall(function() Window:Notify({ Title = "Arsenal Hub", Content = text, Duration = 4, Type = ty or "Info" }) end)
 	print("[Arsenal Hub] " .. text)
-end
-
-if IsStandalone then
-	Window:Notify({ Title = "Arsenal Hub v"..CONFIG.Version, Content = "Модуль загружен!", Duration = 5, Type = "Success" })
 end
 
 local Tabs = {
@@ -423,14 +419,7 @@ local Tabs = {
 	Movement = Window:CreateTab({ Name = "Movement" }),
 	Main     = Window:CreateTab({ Name = "Главная" }),
 }
-local Window = NolinUI:CreateWindow({
-    Name = "Nolin-UI v2.1 | interface settings",
-    DiscordInvite = "https://discord.gg/gHx8RAb9c8",
-    KeybindToToggle = Enum.KeyCode.RightShift,
-    SizeX = 580,
-    SizeY = 420,
-    IncludeSettings = true, -- Добавляет автоматическую вкладку настроек
-})
+
 -- Combat
 Tabs.Combat:CreateSection({ Name = "Aimbot" })
 
@@ -546,7 +535,12 @@ Unload = function()
 	if Movement.FlyBody then pcall(function() Movement.FlyBody:Destroy() end) end
 	local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
 	if hum then hum.WalkSpeed = 16 hum.JumpPower = 50 hum.AutoRotate = true end
-	if IsStandalone then pcall(function() Window:Destroy() end) end
+
+	pcall(function() Window:Destroy() end)
+	if _G.NolinWindow == Window then
+		_G.NolinWindow = nil
+	end
+
 	State.Loaded = false
 end
 
